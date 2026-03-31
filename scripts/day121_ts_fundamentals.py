@@ -61,5 +61,28 @@ absolute_errors = [
 
 mae = sum(absolute_errors) / len(absolute_errors)
 
-print("\nABSOLUTE ERRORS:", absolute_errors)
-print("BASELINE MAE:", mae)
+# print("\nABSOLUTE ERRORS:", absolute_errors)
+# print("BASELINE MAE:", mae)
+
+df["lag_1"] = df["sales"].shift(1)
+df["lag_2"] = df["sales"].shift(2)
+df["lag_3"] = df["sales"].shift(3)
+
+df["rolling_mean_3"] = df["sales"].rolling(window=3).mean()
+
+df["rolling_mean_3_past"] = df["lag_1"].rolling(window=3).mean()
+
+feature_df = df.dropna().copy()
+
+# print(feature_df)
+
+feature_cols = ["lag_1", "lag_2", "lag_3", "rolling_mean_3", "rolling_mean_3_past"]
+
+X = feature_df[feature_cols]
+y = feature_df["sales"]
+
+print("X:")
+print(X)
+
+print("\ny:")
+print(y)
