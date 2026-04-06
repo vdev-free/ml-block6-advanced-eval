@@ -2,6 +2,7 @@ import pandas as pd
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error
 from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 df = pd.DataFrame({
     "date": pd.date_range(start="2025-05-01", periods=21, freq="D"),
@@ -63,10 +64,16 @@ arima_preds = arima_model_fit.forecast(steps=len(arima_test))
 
 arima_mae = mean_absolute_error(arima_test, arima_preds)
 
-print("XGBoost MAE:", xgb_mae)
-print("ARIMA MAE:", arima_mae)
+sarima_model = SARIMAX(
+    arima_train,
+    order=(1, 1, 1),
+    seasonal_order=(1, 0, 0, 7),
+)
 
-if xgb_mae < arima_mae:
-    print("Winner: XGBoost")
-else:
-    print("Winner: ARIMA")
+sarima_model_fit = sarima_model.fit()
+
+sarima_preds = sarima_model_fit.forecast(steps=len(arima_test))
+
+sarima_mae = mean_absolute_error(arima_test, sarima_preds)
+
+print("SARIMA MAE:", sarima_mae)
