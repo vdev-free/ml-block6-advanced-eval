@@ -1,0 +1,9 @@
+label,text,text_clean,text_clean_no_digits
+positive,I love this product! It works really well.,i love this product it works really well,i love this product it works really well
+negative,Terrible quality... I want my money back!!!,terrible quality i want my money back,terrible quality i want my money back
+positive,"Fast delivery, good packaging, very happy.",fast delivery good packaging very happy,fast delivery good packaging very happy
+negative,Worst purchase ever. Broken after 2 days.,worst purchase ever broken after 2 days,worst purchase ever broken after days
+positive,Support team was helpful and polite.,support team was helpful and polite,support team was helpful and polite
+negative,I am disappointed. The item is not working.,i am disappointed the item is not working,i am disappointed the item is not working
+positive,"Very nice experience, I recommend it.",very nice experience i recommend it,very nice experience i recommend it
+negative,"Bad service, slow shipping, poor response.",bad service slow shipping poor response,bad service slow shipping poor response
