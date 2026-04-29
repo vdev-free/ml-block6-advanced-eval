@@ -4,4 +4,4 @@ __pycache__/
 .DS_Store
 artifacts/
 .mlruns/
-models/models/
+models/
