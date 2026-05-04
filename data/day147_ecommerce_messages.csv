@@ -1,0 +1,37 @@
+text,label
+"My order arrived two days late.",delivery_issue
+"The package was damaged when it arrived.",delivery_issue
+"I still have not received my parcel.",delivery_issue
+"The tracking number does not update.",delivery_issue
+"The courier never came to my address.",delivery_issue
+"My delivery was sent to the wrong pickup point.",delivery_issue
+"My card was charged twice during checkout.",payment_issue
+"The payment failed but money was taken from my account.",payment_issue
+"I cannot complete the payment on the checkout page.",payment_issue
+"My invoice has the wrong total amount.",payment_issue
+"The promo code does not apply at payment step.",payment_issue
+"Apple Pay is not working for my order.",payment_issue
+"The headphones stopped working after two days.",product_quality
+"The product quality is much worse than expected.",product_quality
+"The item looks different from the photos on the website.",product_quality
+"The size is not correct and does not match the description.",product_quality
+"The screen has scratches and the box was already opened.",product_quality
+"The material feels cheap and uncomfortable.",product_quality
+"I want to return this product and get a refund.",return_refund
+"How can I send this item back to your store?",return_refund
+"I would like to exchange this product for another size.",return_refund
+"Please cancel my order and refund my payment.",return_refund
+"What is your return policy for opened packages?",return_refund
+"I received the wrong item and want my money back.",return_refund
+"The product is excellent and I am very happy with my order.",positive_feedback
+"Fast delivery and great customer service, thank you!",positive_feedback
+"The quality is amazing and I will buy again.",positive_feedback
+"Everything arrived on time and worked perfectly.",positive_feedback
+"I love this store and the products are always good.",positive_feedback
+"Thank you for the quick support and smooth shopping experience.",positive_feedback
+"Do you ship this product to Finland?",general_question
+"Is this item available in a larger size?",general_question
+"When will this product be back in stock?",general_question
+"Can I use a gift card for this order?",general_question
+"Do you have this product in another color?",general_question
+"How long does standard delivery usually take?",general_question

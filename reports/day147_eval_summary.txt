@@ -1,0 +1,14 @@
+Day 147 — E-commerce Message Classifier Evaluation
+=======================================================
+
+Model: distilbert-base-uncased
+Seed: 42
+Train size: 24
+Test size: 12
+Labels: ['delivery_issue', 'general_question', 'payment_issue', 'positive_feedback', 'product_quality', 'return_refund']
+
+Eval accuracy: 0.3333
+Eval loss: 1.6423
+
+Known limitation:
+Dataset is very small: only 4 train examples per category. Accuracy is expected to be unstable and not production-ready.
