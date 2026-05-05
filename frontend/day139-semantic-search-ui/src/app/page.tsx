@@ -1,169 +1,304 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
-type SearchResult = {
-  text: string;
+type MessageCategory =
+  | "delivery_issue"
+  | "general_question"
+  | "payment_issue"
+  | "positive_feedback"
+  | "product_quality"
+  | "return_refund";
+
+type ClassifyMessageResponse = {
+  category: MessageCategory;
   score: number;
+  is_confident: boolean;
 };
 
-type SearchResponse = {
-  query: string;
-  top_k: number;
-  latency_ms: number;
-  results: SearchResult[];
+type ExampleMessage = {
+  label: string;
+  category: MessageCategory;
+  text: string;
 };
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+
+const CATEGORY_LABELS: Record<MessageCategory, string> = {
+  delivery_issue: "Delivery issue",
+  general_question: "General question",
+  payment_issue: "Payment issue",
+  positive_feedback: "Positive feedback",
+  product_quality: "Product quality",
+  return_refund: "Return / refund",
+};
+
+const CATEGORY_DESCRIPTIONS: Record<MessageCategory, string> = {
+  delivery_issue:
+    "The customer message is related to shipping, late delivery, damaged package, tracking, or pickup point.",
+  general_question:
+    "The customer asks a general question about availability, size, shipping, product details, or store policy.",
+  payment_issue:
+    "The customer has a problem with payment, checkout, card charge, invoice, or promo code.",
+  positive_feedback:
+    "The customer is happy with the product, delivery, support, or shopping experience.",
+  product_quality:
+    "The customer reports a quality problem: broken item, wrong size, scratches, poor material, or mismatch with description.",
+  return_refund:
+    "The customer wants to return, exchange, cancel, or get money back.",
+};
+
+const EXAMPLE_MESSAGES: ExampleMessage[] = [
+  {
+    label: "Late delivery",
+    category: "delivery_issue",
+    text: "My order arrived late and the package was damaged.",
+  },
+  {
+    label: "Payment problem",
+    category: "payment_issue",
+    text: "My card was charged twice during checkout.",
+  },
+  {
+    label: "Product quality",
+    category: "product_quality",
+    text: "The headphones stopped working after two days.",
+  },
+  {
+    label: "Return request",
+    category: "return_refund",
+    text: "I want to return this product and get a refund.",
+  },
+  {
+    label: "Positive feedback",
+    category: "positive_feedback",
+    text: "Fast delivery and great customer service, thank you!",
+  },
+  {
+    label: "General question",
+    category: "general_question",
+    text: "Do you ship this product to Finland?",
+  },
+];
+
+function formatScore(score: number): string {
+  return `${Math.round(score * 100)}%`;
+}
 
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [latencyMs, setLatencyMs] = useState<number | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [topK, setTopK] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [message, setMessage] = useState<string>(
+    "My order arrived late and the package was damaged."
+  );
+  const [result, setResult] = useState<ClassifyMessageResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const trimmedMessage = message.trim();
+
+  const selectedCategoryDescription = useMemo(() => {
+    if (!result) {
+      return null;
+    }
+
+    return CATEGORY_DESCRIPTIONS[result.category];
+  }, [result]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!trimmedMessage) {
+      setError("Please enter a customer message.");
+      setResult(null);
+      return;
+    }
 
     try {
-      setLoading(true);
-      setError("");
-      setResults([]);
-      setLatencyMs(null);
-      setHasSearched(false);
-      setTopK(null);
+      setIsLoading(true);
+      setError(null);
+      setResult(null);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/search`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query,
-            top_k: 3,
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/classify-message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: trimmedMessage,
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error("Search request failed");
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
-      const data: SearchResponse = await response.json();
-      setResults(data.results);
-      setLatencyMs(data.latency_ms);
-      setHasSearched(true);
-      setTopK(data.top_k);
-    } catch (err) {
-      setError("Не вдалося отримати результати пошуку");
-      setResults([]);
-      setHasSearched(true);
+      const data = (await response.json()) as ClassifyMessageResponse;
+
+      setResult(data);
+    } catch (unknownError) {
+      const message =
+        unknownError instanceof Error
+          ? unknownError.message
+          : "Something went wrong. Please try again.";
+
+      setError(message);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
+  }
+
+  function handleExampleClick(example: ExampleMessage) {
+    setMessage(example.text);
+    setResult(null);
+    setError(null);
+  }
 
   return (
-    <main className="min-h-screen bg-white px-6 py-10 text-black">
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold">Semantic Search Demo</h1>
-          <p className="text-sm text-gray-600">
-            Введи запит і ми знайдемо найближчі тексти за змістом.
-          </p>
-        </div>
+    <main className="page">
+      <section className="hero">
+        <div className="eyebrow">Mini Production Project · Day 149</div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            type="text"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Наприклад: I need help from customer support"
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-black"
+        <h1>AI E-commerce Message Classifier</h1>
+
+        <p className="heroText">
+          Paste a customer message from an online store and classify it into a
+          support category: delivery, payment, product quality, return/refund,
+          positive feedback, or general question.
+        </p>
+      </section>
+
+      <section className="layout">
+        <form className="card inputCard" onSubmit={handleSubmit}>
+          <div className="sectionHeader">
+            <div>
+              <h2>Customer message</h2>
+              <p>
+                This is what a support/admin user could paste from an e-commerce
+                inbox.
+              </p>
+            </div>
+          </div>
+
+          <label className="label" htmlFor="message">
+            Message
+          </label>
+
+          <textarea
+            id="message"
+            className="textarea"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder="Example: My package arrived damaged and two days late."
+            rows={8}
           />
 
-          <button
-            type="button"
-            onClick={handleSearch}
-            disabled={loading}
-            className="rounded-xl bg-black px-5 py-3 text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? "Searching..." : "Search"}
-          </button>
-        </div>
+          <div className="actions">
+            <button
+              className="primaryButton"
+              type="submit"
+              disabled={isLoading || !trimmedMessage}
+            >
+              {isLoading ? "Analyzing..." : "Analyze message"}
+            </button>
 
-        <div className="rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">Current query:</p>
-          {loading && (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
-              Шукаю результати...
+            <span className="hint">
+              API: <code>{API_BASE_URL}</code>
+            </span>
+          </div>
+
+          {error && <div className="errorBox">{error}</div>}
+        </form>
+
+        <aside className="card resultCard">
+          <div className="sectionHeader">
+            <div>
+              <h2>AI result</h2>
+              <p>Prediction from the FastAPI transformer service.</p>
+            </div>
+          </div>
+
+          {!result && !isLoading && (
+            <div className="emptyState">
+              <div className="emptyIcon">🤖</div>
+              <p>Run analysis to see the predicted support category.</p>
             </div>
           )}
 
-          {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {error}
+          {isLoading && (
+            <div className="emptyState">
+              <div className="emptyIcon">⏳</div>
+              <p>Model is analyzing the message...</p>
             </div>
           )}
-          <p className="mt-2 text-base">{query || "Поки що пусто"}</p>
-          {latencyMs !== null && (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-              Search latency:{" "}
-              <span className="font-semibold">{latencyMs} ms</span>
-            </div>
-          )}
-          {hasSearched && !loading && !error && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-gray-500">
-                  Top K
-                </p>
-                <p className="mt-2 text-lg font-semibold">{topK ?? "-"}</p>
-              </div>
 
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-gray-500">
-                  Results count
-                </p>
-                <p className="mt-2 text-lg font-semibold">{results.length}</p>
-              </div>
-            </div>
-          )}
-          {hasSearched && !loading && !error && results.length === 0 && (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-              Нічого не знайдено за цим запитом.
-            </div>
-          )}
-          {results.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <h2 className="text-xl font-semibold">Results</h2>
+          {result && (
+            <div className="prediction">
+              <div className="predictionTop">
+                <span className="categoryBadge">
+                  {CATEGORY_LABELS[result.category]}
+                </span>
 
-              {results.map((result, index) => (
-                <div
-                  key={`${result.text}-${index}`}
-                  className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+                <span
+                  className={
+                    result.is_confident
+                      ? "confidenceBadge confidenceGood"
+                      : "confidenceBadge confidenceLow"
+                  }
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs uppercase tracking-wide text-gray-500">
-                      Result #{index + 1}
-                    </p>
-                    <p className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
-                      Score: {result.score.toFixed(4)}
-                    </p>
-                  </div>
+                  {result.is_confident ? "Confident" : "Low confidence"}
+                </span>
+              </div>
 
-                  <p className="mt-4 text-base leading-7 text-black">
-                    {result.text}
-                  </p>
+              <div className="scoreBlock">
+                <span className="scoreLabel">Confidence score</span>
+                <strong>{formatScore(result.score)}</strong>
+              </div>
+
+              <div className="scoreBar">
+                <div
+                  className="scoreBarFill"
+                  style={{ width: `${Math.round(result.score * 100)}%` }}
+                />
+              </div>
+
+              {selectedCategoryDescription && (
+                <p className="description">{selectedCategoryDescription}</p>
+              )}
+
+              {!result.is_confident && (
+                <div className="warningBox">
+                  Low confidence — please review manually. The model was trained
+                  on a very small educational dataset and is not
+                  production-ready.
                 </div>
-              ))}
+              )}
             </div>
           )}
+        </aside>
+      </section>
+
+      <section className="card examplesCard">
+        <div className="sectionHeader">
+          <div>
+            <h2>Example messages</h2>
+            <p>Click an example to test the classifier quickly.</p>
+          </div>
         </div>
-      </div>
+
+        <div className="examplesGrid">
+          {EXAMPLE_MESSAGES.map((example) => (
+            <button
+              key={example.label}
+              className="exampleButton"
+              type="button"
+              onClick={() => handleExampleClick(example)}
+            >
+              <span>{example.label}</span>
+              <small>{CATEGORY_LABELS[example.category]}</small>
+            </button>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }
